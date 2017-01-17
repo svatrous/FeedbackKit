@@ -11,7 +11,7 @@ import UIKit
 
 public enum Feedback {
 
-    public class EmailConfig {
+    open class EmailConfig {
         var toList: [String]
         var mailSubject: String?
         var ccList: [String]?
@@ -30,19 +30,19 @@ public enum Feedback {
     }
 
     // feedback by email
-    case Email(emailConfig: EmailConfig)
+    case email(emailConfig: EmailConfig)
 
     // feedback by custom action. when custom action was finished successfully, need to call 'success' method.
-    case Custom(action: ((feedbackViewController: FeedbackViewController, sendInformation: SendInformation, success:(()->Void)) -> Void))
+    case custom(action: ((_ feedbackViewController: FeedbackViewController, _ sendInformation: SendInformation, _ success:(()->Void)) -> Void))
 
-    public func show(dismissed:(()->Void)) {
+    public func show(_ dismissed:@escaping (()->Void)) {
 
-        guard let callerViewController = UIApplication.sharedApplication().keyWindow?.rootViewController else {
+        guard let callerViewController = UIApplication.shared.keyWindow?.rootViewController else {
             return
         }
 
         switch self {
-        case .Email(let email):
+        case .email(let email):
             let feedbackMail = FeedbackMail()
             FeedbackViewController.presentFeedbackViewController(callerViewController, action: { (feedbackViewController: FeedbackViewController, sendInformation: SendInformation) in
                 // send mail
@@ -53,11 +53,11 @@ public enum Feedback {
                     dismissed()
                 })
             })
-        case .Custom(let action):
+        case .custom(let action):
             FeedbackViewController.presentFeedbackViewController(callerViewController, action: { (feedbackViewController: FeedbackViewController, sendInformation: SendInformation) in
 
                 let success: (()->Void) = {
-                    dispatch_async(dispatch_get_main_queue(), {
+                    DispatchQueue.main.async(execute: {
                         // dismiss feedbackview
                         feedbackViewController.dismissFeedbackViewController()
                         // callback
@@ -66,19 +66,19 @@ public enum Feedback {
                 }
 
                 // execute custom action
-                action(feedbackViewController: feedbackViewController, sendInformation: sendInformation, success: success)
+                action(feedbackViewController, sendInformation, success)
             })
         }
     }
 
-    public func addDoubleLongPressGestureRecognizer(dismissed:(()->Void)) {
+    public func addDoubleLongPressGestureRecognizer(_ dismissed:@escaping (()->Void)) {
 
         GestureFeedback.gestureFeedback.dismissed = dismissed
         GestureFeedback.gestureFeedback.feedback = self
 
         let gesture = UILongPressGestureRecognizer(target: GestureFeedback.gestureFeedback, action: #selector(GestureFeedback.pressGesture(_:)))
         gesture.numberOfTouchesRequired = 2
-        if let window = UIApplication.sharedApplication().delegate?.window {
+        if let window = UIApplication.shared.delegate?.window {
             if let recognizers = window?.gestureRecognizers {
                 for recognizer in recognizers {
                     if recognizer is UILongPressGestureRecognizer {
@@ -98,11 +98,11 @@ final class GestureFeedback: NSObject {
 
     static let gestureFeedback = GestureFeedback()
 
-    private override init() {
+    fileprivate override init() {
 
     }
 
-    func pressGesture(sender: UIGestureRecognizer) {
+    func pressGesture(_ sender: UIGestureRecognizer) {
 
         guard let feedback = feedback else {
             return

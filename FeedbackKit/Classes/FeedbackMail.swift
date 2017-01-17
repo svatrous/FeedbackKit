@@ -13,11 +13,11 @@ class FeedbackMail: NSObject, MFMailComposeViewControllerDelegate {
     
     var mailSendCompletion: (() -> Void)?
 
-    internal func send(emailConfig: Feedback.EmailConfig, sendInformation: SendInformation, callerViewController: UIViewController, mailSendCompletion: (() -> Void)) {
+    internal func send(_ emailConfig: Feedback.EmailConfig, sendInformation: SendInformation, callerViewController: UIViewController, mailSendCompletion: @escaping (() -> Void)) {
         
         guard MFMailComposeViewController.canSendMail() else {
-            let alertController = UIAlertController(title: "error", message: "mail can not use", preferredStyle: UIAlertControllerStyle.Alert)
-            callerViewController.presentViewController(alertController, animated: true, completion: nil)
+            let alertController = UIAlertController(title: "error", message: "mail can not use", preferredStyle: UIAlertControllerStyle.alert)
+            callerViewController.present(alertController, animated: true, completion: nil)
             return
         }
         
@@ -40,29 +40,29 @@ class FeedbackMail: NSObject, MFMailComposeViewControllerDelegate {
         mailViewController.setMessageBody(sendInformation.feedbackBodyMessage, isHTML: false)
         
         if let captureImageData = sendInformation.captureImageData {
-            mailViewController.addAttachmentData(captureImageData, mimeType: "image/png", fileName: "feedback.png")
+            mailViewController.addAttachmentData(captureImageData as Data, mimeType: "image/png", fileName: "feedback.png")
         }
         
-        callerViewController.presentViewController(mailViewController, animated: true, completion: nil)
+        callerViewController.present(mailViewController, animated: true, completion: nil)
         
     }
     
-    func mailComposeController(controller: MFMailComposeViewController, didFinishWithResult result: MFMailComposeResult, error: NSError?) {
+    func mailComposeController(_ controller: MFMailComposeViewController, didFinishWith result: MFMailComposeResult, error: Error?) {
         
         switch result {
-        case MFMailComposeResultSent:
-            controller.dismissViewControllerAnimated(true, completion: {
+        case MFMailComposeResult.sent:
+            controller.dismiss(animated: true, completion: {
                 if let mailSendCompletion = self.mailSendCompletion {
                     mailSendCompletion()
                 }
             })
-        case MFMailComposeResultSaved:
+        case MFMailComposeResult.saved:
             fallthrough
-        case MFMailComposeResultCancelled:
-            controller.dismissViewControllerAnimated(true, completion: nil)
-        case MFMailComposeResultFailed:
-            let alertController = UIAlertController(title: "mail send error", message: "error:\(error)", preferredStyle: UIAlertControllerStyle.Alert)
-            controller.presentViewController(alertController, animated: true, completion: nil)
+        case MFMailComposeResult.cancelled:
+            controller.dismiss(animated: true, completion: nil)
+        case MFMailComposeResult.failed:
+            let alertController = UIAlertController(title: "mail send error", message: "error:\(error)", preferredStyle: UIAlertControllerStyle.alert)
+            controller.present(alertController, animated: true, completion: nil)
         default:
             break
         }
